@@ -1,0 +1,41 @@
+name: Builder APK
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # to be able to publish a GitHub release
+      issues: write # to be able to comment on released issues
+      pull-requests: write # to be able to comment on released pull requests
+      id-token: write # to enable use of OIDC
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Make sure the release step uses its own credentials:
+          # https://github.com/cycjimmy/semantic-release-action#private-packages
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: JDK Setup
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: 17
+
+      - name: Build project
+        run: ./gradlew build
+
+      - name: Build APK
+        run: ./gradlew assembleRelease
+
+      - name: Upload Signed app to Artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: 'Artifacts'
+          path: app/build/outputs/apk/release/*.apk
